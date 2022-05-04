@@ -12,6 +12,9 @@
         <action
             android:id="@+id/action_splash_to_movie"
             app:destination="@id/movie" />
+        <action
+            android:id="@+id/action_splash_to_searchResult"
+            app:destination="@id/searchResult" />
     </fragment>
     <fragment
         android:id="@+id/login"
@@ -22,5 +25,18 @@
         android:id="@+id/movie"
         android:name="com.example.moviebase.movie"
         android:label="fragment_movie"
-        tools:layout="@layout/fragment_movie" />
+        tools:layout="@layout/fragment_movie" >
+        <action
+            android:id="@+id/action_movie_to_searchResult"
+            app:destination="@id/searchResult" />
+    </fragment>
+    <fragment
+        android:id="@+id/searchResult"
+        android:name="com.example.moviebase.searchResult"
+        android:label="fragment_search_result"
+        tools:layout="@layout/fragment_search_result" >
+        <action
+            android:id="@+id/action_searchResult_to_movie"
+            app:destination="@id/movie" />
+    </fragment>
 </navigation>

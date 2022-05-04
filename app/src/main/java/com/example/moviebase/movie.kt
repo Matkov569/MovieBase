@@ -4,16 +4,16 @@ import android.app.AlertDialog
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
-import android.os.StrictMode
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import android.os.*
 import android.text.InputType
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
+import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.constraintlayout.widget.ConstraintLayout
@@ -32,47 +32,38 @@ import kotlin.concurrent.schedule
 
 class movie : Fragment() {
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-    }
+    lateinit var lSM: loadingScreenManager;
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
+        var view = inflater.inflate(R.layout.fragment_movie, container, false);
 
-
+        lSM = loadingScreenManager(activity,view);
 
         // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_movie, container, false)
+        return view;
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        timer();
+
+        val viewModel by activityViewModels<ViewModel>();
+
+
+        view.findViewById<ImageButton>(R.id.retBtn).setOnClickListener {
+            //sprawdź w viewmodelu gdzie wrócić i wróć tam
+            findNavController().navigate(R.id.action_movie_to_searchResult)
+        }
+
         runBlocking {
-            // imbd ID for witcher - just for tests
-            downloadData("tt5180504");
+            if(viewModel.imbdID!="")
+                networkCircle(viewModel.imbdID);
+            lSM.timer();
         }
 
-    }
-
-    // showing alert if not ready in 5s
-    private fun timer() {
-        Timer().schedule(5000) {
-            activity?.runOnUiThread {
-                view?.findViewById<TextView>(R.id.alertText)?.visibility = View.VISIBLE;
-            }
-        }
-    }
-
-    // hiding loading screen
-    private fun hideLoading(){
-        activity?.runOnUiThread {
-            view?.findViewById<ConstraintLayout>(R.id.loadingScreen)?.visibility = View.GONE;
-        }
     }
 
     private suspend fun downloadData(movieID:String){
@@ -80,22 +71,21 @@ class movie : Fragment() {
         val policy = StrictMode.ThreadPolicy.Builder().permitAll().build()
         StrictMode.setThreadPolicy(policy)
         val apiID:String = secrets().moviesAPIkey;
-        println("https://www.omdbapi.com/?apikey=$apiID&i=$movieID");
         try {
             runBlocking {
 
-                json = URL("https://www.omdbapi.com/?apikey=$apiID&i=$movieID").readText()
+                json = URL("https://www.omdbapi.com/?apikey=$apiID&i=$movieID&plot=full").readText()
 
                 //val viewModel by activityViewModels<ViewModel>();
 
                 var obj = JSONObject(json)
 
                 var title = obj.getString("Title");
-                var year = obj.getString("Year");
-                var director = obj.getString("Director");
-                var actors = obj.getString("Actors");
-                var plot = obj.getString("Plot");
-                var posterURL = obj.getString("Poster");
+                var year = obj.optString("Year","N/A");
+                var director = obj.optString("Director","N/A");
+                var actors = obj.optString("Actors","N/A");
+                var plot = obj.optString("Plot","N/A");
+                var posterURL = obj.optString("Poster","N/A");
 
                 activity?.runOnUiThread {
                     view?.findViewById<TextView>(R.id.barTitle)?.text = title;
@@ -105,29 +95,30 @@ class movie : Fragment() {
                     view?.findViewById<TextView>(R.id.movieActors)?.text = actors;
                     view?.findViewById<TextView>(R.id.moviePlot)?.text = plot;
 
-                    val icon = view?.findViewById<ImageView>(R.id.moviePoster);
-                    val executor = Executors.newSingleThreadExecutor()
-                    val handler = Handler(Looper.getMainLooper())
+                    if(posterURL != "N/A") {
+                        val icon = view?.findViewById<ImageView>(R.id.moviePoster);
+                        val executor = Executors.newSingleThreadExecutor()
+                        val handler = Handler(Looper.getMainLooper())
 
-                    var image: Bitmap? = null
+                        var image: Bitmap? = null
 
-                    executor.execute {
-                        val imageURL = posterURL
-                        try {
-                            val `in` = URL(imageURL).openStream()
-                            image = BitmapFactory.decodeStream(`in`)
-                            handler.post {
-                                icon?.setImageBitmap(image)
+                        executor.execute {
+                            val imageURL = posterURL
+                            try {
+                                val `in` = URL(imageURL).openStream()
+                                image = BitmapFactory.decodeStream(`in`)
+                                handler.post {
+                                    icon?.setImageBitmap(image)
+                                }
+                            } catch (e: Exception) {
+                                e.printStackTrace()
                             }
-                        }
-                        catch (e: Exception) {
-                            e.printStackTrace()
                         }
                     }
                 }
 
                 launch {
-                    hideLoading()
+                    lSM.hideLoading()
                 }
             }
         }
@@ -142,6 +133,36 @@ class movie : Fragment() {
         catch (e: Exception){
             println("JSON EXCEPTION")
             println(e.toString())
+        }
+    }
+
+    suspend fun networkCircle(movieID: String){
+        if(!networkTest()){
+            Timer().schedule(1000){
+                runBlocking {networkCircle(movieID)};
+            }
+        }
+        else
+            downloadData(movieID);
+    }
+
+    fun networkTest():Boolean{
+        var cm = context?.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager;
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val network = cm.activeNetwork ?: return false
+            val activeNetwork = cm.getNetworkCapabilities(network) ?: return false
+
+            return when {
+                activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> true
+                activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> true
+                else -> false
+            }
+        } else {
+            @Suppress("DEPRECATION") val networkInfo =
+                cm.activeNetworkInfo ?: return false
+            @Suppress("DEPRECATION")
+            return networkInfo.isConnected
         }
     }
 }

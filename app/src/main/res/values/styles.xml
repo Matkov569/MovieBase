@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="whiteSearch" parent="">
+        <item name="editTextColor">#FFFFFF</item>
+        <item name="android:textColorHint">#FFFFFF</item>
+        <item name="tint">#FFFFFF</item>
+        <item name="android:textColor">#FFFFFF</item>
+        <item name="android:editTextColor">#FFFFFF</item>
+        <item name="backgroundTint">#FFFFFF</item>
+        <item name="android:backgroundTint">#FFFFFF</item>
+    </style>
+</resources>

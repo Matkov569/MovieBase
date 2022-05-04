@@ -28,7 +28,7 @@ class splash : Fragment() {
             param1 = it.getString(ARG_PARAM1)
             param2 = it.getString(ARG_PARAM2)
         }
-        findNavController().navigate(R.id.action_splash_to_movie);
+        findNavController().navigate(R.id.action_splash_to_searchResult);
     }
 
     override fun onCreateView(

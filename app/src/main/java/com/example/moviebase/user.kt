@@ -5,10 +5,11 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
+import android.widget.ImageButton
 import androidx.navigation.fragment.findNavController
-import com.google.android.gms.common.SignInButton
 
-class login : Fragment() {
+class user : Fragment() {
 
     lateinit var lSM:loadingScreenManager;
 
@@ -17,13 +18,14 @@ class login : Fragment() {
         savedInstanceState: Bundle?
     ): View? {
         // Inflate the layout for this fragment
-        var view = inflater.inflate(R.layout.fragment_login, container, false)
+        var view = inflater.inflate(R.layout.fragment_user, container, false);
 
         lSM = loadingScreenManager(activity,view,context);
 
-        //sprawdź czy jest zalogowany i jeśli tak to przekieruj do main
-        //zmienić przejście na funkcje do logowania itd
+        //pobierz dane i avatar i umieść w profileImage
+        //zmienić na odpowiednią funckję
         if (!lSM.networkTest()) lSM.timer()
+        lSM.networkCircle({lSM.hideLoading()})
 
         return view;
     }
@@ -31,10 +33,13 @@ class login : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        view.findViewById<SignInButton>(R.id.signInButton).setOnClickListener{
-            //lSM.networkCircle({})
-            findNavController().navigate(R.id.action_login_to_main)
+        view.findViewById<ImageButton>(R.id.retBtn).setOnClickListener {
+            findNavController().navigate(R.id.action_user_to_main);
         }
 
+        view.findViewById<Button>(R.id.signOutBtn).setOnClickListener {
+            //wylogowywanie
+            findNavController().navigate(R.id.action_user_to_login);
+        }
     }
 }

@@ -1,34 +1,24 @@
 package com.example.moviebase
 
 import android.app.AlertDialog
-import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.net.ConnectivityManager
-import android.net.NetworkCapabilities
 import android.os.*
-import android.text.InputType
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
-import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.fragment.app.activityViewModels
 import androidx.navigation.fragment.findNavController
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
-import org.w3c.dom.Text
 import java.io.FileNotFoundException
 import java.net.URL
-import java.text.SimpleDateFormat
-import java.util.*
 import java.util.concurrent.Executors
-import kotlin.concurrent.schedule
 
 class movie : Fragment() {
 
@@ -40,7 +30,12 @@ class movie : Fragment() {
     ): View? {
         var view = inflater.inflate(R.layout.fragment_movie, container, false);
 
-        lSM = loadingScreenManager(activity,view);
+        val viewModel by activityViewModels<ViewModel>();
+        lSM = loadingScreenManager(activity,view,context);
+
+        if (!lSM.networkTest()) lSM.timer()
+        println(viewModel.imbdID);
+
 
         // Inflate the layout for this fragment
         return view;
@@ -49,24 +44,26 @@ class movie : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-
         val viewModel by activityViewModels<ViewModel>();
 
+        if(viewModel.imbdID!="")
+            lSM.networkCircle({runBlocking{downloadData(viewModel.imbdID)}});
 
         view.findViewById<ImageButton>(R.id.retBtn).setOnClickListener {
-            //sprawdź w viewmodelu gdzie wrócić i wróć tam
-            findNavController().navigate(R.id.action_movie_to_searchResult)
+            if(viewModel.returnTo=="searchResult")
+                findNavController().navigate(R.id.action_movie_to_searchResult)
+            else
+                findNavController().navigate(R.id.action_movie_to_main)
         }
 
-        runBlocking {
-            if(viewModel.imbdID!="")
-                networkCircle(viewModel.imbdID);
-            lSM.timer();
+        view.findViewById<ImageButton>(R.id.addToSeen).setOnClickListener {
+            //dodawanie informacji do bazy
         }
 
     }
 
     private suspend fun downloadData(movieID:String){
+        println("downloading")
         var json = "";
         val policy = StrictMode.ThreadPolicy.Builder().permitAll().build()
         StrictMode.setThreadPolicy(policy)
@@ -125,7 +122,7 @@ class movie : Fragment() {
         catch (e: FileNotFoundException){
             var builder = AlertDialog.Builder(context);
             builder.setTitle("Brak danych");
-            builder.setMessage("Dane pogodowe dla podanej lokalizacji są niedostępne. Spróbuj ustawić inną lokalizację, lub sprawdź spis dostępnych lokalizacji na stronie OpenWeatherMap.");
+            builder.setMessage("Nie otrzymano danych od serwera. Spróbuj ponownie.");
             builder.setPositiveButton("Ok"){ dialog, which ->
             }
             builder.show();
@@ -136,33 +133,4 @@ class movie : Fragment() {
         }
     }
 
-    suspend fun networkCircle(movieID: String){
-        if(!networkTest()){
-            Timer().schedule(1000){
-                runBlocking {networkCircle(movieID)};
-            }
-        }
-        else
-            downloadData(movieID);
-    }
-
-    fun networkTest():Boolean{
-        var cm = context?.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager;
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            val network = cm.activeNetwork ?: return false
-            val activeNetwork = cm.getNetworkCapabilities(network) ?: return false
-
-            return when {
-                activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> true
-                activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> true
-                else -> false
-            }
-        } else {
-            @Suppress("DEPRECATION") val networkInfo =
-                cm.activeNetworkInfo ?: return false
-            @Suppress("DEPRECATION")
-            return networkInfo.isConnected
-        }
-    }
 }

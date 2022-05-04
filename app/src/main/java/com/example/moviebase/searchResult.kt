@@ -1,37 +1,23 @@
 package com.example.moviebase
 
 import android.app.AlertDialog
-import android.content.Context
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.net.ConnectivityManager
-import android.net.NetworkCapabilities
 import android.os.*
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.EditText
-import android.widget.ImageView
-import android.widget.SearchView
-import android.widget.TextView
-import androidx.constraintlayout.widget.ConstraintLayout
+import android.widget.*
 import androidx.fragment.app.activityViewModels
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import org.json.JSONArray
 import org.json.JSONObject
 import java.io.FileNotFoundException
 import java.net.URL
-import java.net.URLEncoder
 import java.net.URLEncoder.encode
-import java.util.*
-import java.util.concurrent.Executors
-import kotlin.concurrent.schedule
 import kotlin.math.ceil
-import kotlin.text.Regex.Companion.escape
 
 class searchResult : Fragment() {
 
@@ -45,11 +31,11 @@ class searchResult : Fragment() {
         // Inflate the layout for this fragment
         val view =  inflater.inflate(R.layout.fragment_search_result, container, false);
 
-        lSM = loadingScreenManager(activity,view);
+        lSM = loadingScreenManager(activity,view,context);
 
         val viewModel by activityViewModels<ViewModel>();
 
-        resultAdapter = resultAdapter(viewModel);
+        resultAdapter = resultAdapter(viewModel,"searchResult");
         val recyclerView = view.findViewById<RecyclerView>(R.id.resultRecycler);
         recyclerView.adapter=resultAdapter;
         var layout = LinearLayoutManager(requireContext())
@@ -66,6 +52,9 @@ class searchResult : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        view.findViewById<ImageButton>(R.id.retBtn).setOnClickListener {
+            findNavController().navigate(R.id.action_searchResult_to_main)
+        }
 
         view.findViewById<SearchView>(R.id.barSearch).isSubmitButtonEnabled = true;
         view.findViewById<SearchView>(R.id.barSearch).setOnQueryTextListener(object : SearchView.OnQueryTextListener {
@@ -78,28 +67,19 @@ class searchResult : Fragment() {
                     viewModel.searchText=view.findViewById<SearchView>(R.id.barSearch)?.query.toString();
                     lSM.showLoading();
                     runBlocking {
-                        onSubmitFunction();
+                        lSM.networkCircle({
+                            activity?.runOnUiThread {
+                                runBlocking {
+                                    getResults(view?.findViewById<SearchView>(R.id.barSearch)?.query.toString());
+                                }
+                            }
+                        });
                     }
                 }
                 return false
             }
         } )
 
-    }
-
-    private suspend fun onSubmitFunction(){
-        if(!networkTest()){
-            Timer().schedule(1000){
-                runBlocking {onSubmitFunction()};
-            }
-        }
-        else {
-            activity?.runOnUiThread {
-                runBlocking {
-                    getResults(view?.findViewById<SearchView>(R.id.barSearch)?.query.toString());
-                }
-            }
-        }
     }
 
     private suspend fun getResults(keyword:String){
@@ -171,7 +151,7 @@ class searchResult : Fragment() {
         catch (e: FileNotFoundException){
             var builder = AlertDialog.Builder(context);
             builder.setTitle("Brak danych");
-            builder.setMessage("Dane pogodowe dla podanej lokalizacji są niedostępne. Spróbuj ustawić inną lokalizację, lub sprawdź spis dostępnych lokalizacji na stronie OpenWeatherMap.");
+            builder.setMessage("Nie otrzymano odpowiedzi od serwera. Spróbuj ponownie.");
             builder.setPositiveButton("Ok"){ dialog, which ->
             }
             builder.show();
@@ -181,26 +161,5 @@ class searchResult : Fragment() {
             println(e.toString())
         }
     }
-
-    fun networkTest():Boolean{
-        var cm = context?.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager;
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            val network = cm.activeNetwork ?: return false
-            val activeNetwork = cm.getNetworkCapabilities(network) ?: return false
-
-            return when {
-                activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> true
-                activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> true
-                else -> false
-            }
-        } else {
-            @Suppress("DEPRECATION") val networkInfo =
-                cm.activeNetworkInfo ?: return false
-            @Suppress("DEPRECATION")
-            return networkInfo.isConnected
-        }
-    }
-
 
 }

@@ -9,7 +9,7 @@ import androidx.cardview.widget.CardView
 import androidx.navigation.findNavController
 import androidx.recyclerview.widget.RecyclerView
 
-class resultAdapter(var viewModel: ViewModel): RecyclerView.Adapter<resultAdapter.Holder>() {
+class resultAdapter(var viewModel: ViewModel, var returnTo:String): RecyclerView.Adapter<resultAdapter.Holder>() {
 
     private var records = emptyList<movieRecord>();
     private var deletable = true;
@@ -37,7 +37,7 @@ class resultAdapter(var viewModel: ViewModel): RecyclerView.Adapter<resultAdapte
         holder.Title.text=records[position].title;
         holder.Card.setOnClickListener {
             viewModel.imbdID = records[position].id;
-            viewModel.returnTo="searchResult";
+            viewModel.returnTo=returnTo;
             it.findNavController().navigate(R.id.action_searchResult_to_movie);
         }
         if(deletable){

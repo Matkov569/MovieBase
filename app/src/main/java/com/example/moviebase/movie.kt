@@ -33,6 +33,9 @@ class movie : Fragment() {
         val viewModel by activityViewModels<ViewModel>();
         lSM = loadingScreenManager(activity,view,context);
 
+        if(viewModel.imbdID!="")
+            lSM.networkCircle({runBlocking{downloadData(viewModel.imbdID)}});
+
         if (!lSM.networkTest()) lSM.timer()
         println(viewModel.imbdID);
 
@@ -46,8 +49,6 @@ class movie : Fragment() {
 
         val viewModel by activityViewModels<ViewModel>();
 
-        if(viewModel.imbdID!="")
-            lSM.networkCircle({runBlocking{downloadData(viewModel.imbdID)}});
 
         view.findViewById<ImageButton>(R.id.retBtn).setOnClickListener {
             if(viewModel.returnTo=="searchResult")

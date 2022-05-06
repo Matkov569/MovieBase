@@ -1,16 +1,28 @@
 package com.example.moviebase
 
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.ImageView
+import android.widget.TextView
 import androidx.fragment.app.activityViewModels
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.firebase.auth.FirebaseAuth
 import com.mikhaellopez.circularimageview.CircularImageView
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import java.net.URL
+import java.util.concurrent.Executors
 
 class main : Fragment() {
 
@@ -41,6 +53,26 @@ class main : Fragment() {
         lSM.networkCircle({lSM.hideLoading()});
 
         //daj avatar do profileImage
+        activity?.runOnUiThread {
+            runBlocking {
+                var image:Bitmap?=null;
+                val executor = Executors.newSingleThreadExecutor()
+                executor.execute {
+                    val imageURL = FirebaseAuth.getInstance().currentUser?.photoUrl.toString()
+                    try {
+                        val `in` = URL(imageURL).openStream()
+                        image = BitmapFactory.decodeStream(`in`)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+                launch {
+                    delay(100)
+                    view.findViewById<ImageView>(R.id.profileImage).setImageBitmap(image);
+                }
+            }
+
+        }
 
         return view;
     }

@@ -33,13 +33,6 @@ import java.util.concurrent.Executors
 class user : Fragment() {
 
     lateinit var lSM:loadingScreenManager;
-    lateinit var image:Bitmap;
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-
-    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -68,7 +61,7 @@ class user : Fragment() {
                     }
                 }
                 launch {
-                    delay(100)
+                    delay(1000)
                     view.findViewById<ImageView>(R.id.profileImage).setImageBitmap(image);
                 }
             }
@@ -95,6 +88,13 @@ class user : Fragment() {
         view.findViewById<Button>(R.id.signOutBtn).setOnClickListener {
             //wylogowywanie
             //
+
+            viewModel.imbdID="";
+            viewModel.seenIDs= mutableListOf();
+            viewModel.returnTo="";
+            viewModel.searchText="";
+
+
             runBlocking {
                 //viewModel.googleClient?.signOut();
                 //client.signOut();

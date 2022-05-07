@@ -66,10 +66,7 @@ class loadingScreenManager(var activity: Activity?, var view: View?, var context
             }
         }
         else {
-            activity?.runOnUiThread {
-                function(parameter);
-            }
-
+            function(parameter);
         }
     }
 }

@@ -35,7 +35,7 @@ class searchResult : Fragment() {
 
         val viewModel by activityViewModels<ViewModel>();
 
-        resultAdapter = resultAdapter(viewModel,"searchResult");
+        resultAdapter = resultAdapter(viewModel,"searchResult",requireContext());
         val recyclerView = view.findViewById<RecyclerView>(R.id.resultRecycler);
         recyclerView.adapter=resultAdapter;
         var layout = LinearLayoutManager(requireContext())
@@ -68,11 +68,10 @@ class searchResult : Fragment() {
                     lSM.showLoading();
                     runBlocking {
                         lSM.networkCircle({
-                            activity?.runOnUiThread {
                                 runBlocking {
-                                    getResults(view?.findViewById<SearchView>(R.id.barSearch)?.query.toString());
+                                    getResults(view.findViewById<SearchView>(R.id.barSearch)?.query.toString());
                                 }
-                            }
+
                         });
                     }
                 }
@@ -87,6 +86,7 @@ class searchResult : Fragment() {
         val policy = StrictMode.ThreadPolicy.Builder().permitAll().build()
         StrictMode.setThreadPolicy(policy)
         val apiID:String = secrets().moviesAPIkey;
+        lSM.showLoading();
         try {
             runBlocking {
 
@@ -132,9 +132,13 @@ class searchResult : Fragment() {
                     }
 
                     launch {
-                        resultAdapter.setData(table, false);
-                        // hide loading screen
-                        lSM.hideLoading();
+                        runBlocking {
+
+                            resultAdapter.setData(table, false);
+                            launch {
+                                lSM.hideLoading()
+                            }
+                        }
                     }
                 }
                 else{

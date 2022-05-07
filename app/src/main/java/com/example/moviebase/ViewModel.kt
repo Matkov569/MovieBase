@@ -14,20 +14,6 @@ class ViewModel: ViewModel() {
     var returnTo:String = "";
     var imbdID:String = "";
     var searchText:String = "";
+    var seenIDs:MutableList<String> = mutableListOf();
 
-    var profileImage:Bitmap?=null;
-
-    //firebase stuff
-
-    enum class AuthenticationState {
-        AUTHENTICATED, UNAUTHENTICATED, INVALID_AUTHENTICATION
-    }
-
-    val authenticationState = FirebaseUserLiveData().map { user ->
-        if (user != null) {
-            AuthenticationState.AUTHENTICATED
-        } else {
-            AuthenticationState.UNAUTHENTICATED
-        }
-    }
 }
